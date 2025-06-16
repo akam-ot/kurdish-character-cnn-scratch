@@ -56,7 +56,6 @@ KURDISH_CHAR_MAP = {
 }
 
 
-# Function to get display name with actual Kurdish characters
 def get_display_name(class_name):
     """Convert class name to display name using actual Kurdish characters."""
     return KURDISH_CHAR_MAP.get(class_name, f"Class {class_name}")
@@ -176,35 +175,29 @@ def main():
             if available_samples:
                 # Create character options showing actual Kurdish letters
                 character_options = []
+                character_map = {}
+                
                 for class_name, display_name, file_path in available_samples:
                     kurdish_char = KURDISH_CHAR_MAP.get(class_name, class_name)
-                    character_options.append((kurdish_char, class_name, file_path))
+                    display_text = f"{kurdish_char} (Class {class_name})"
+                    character_options.append(display_text)
+                    character_map[display_text] = (kurdish_char, class_name, file_path)
 
                 # Sort by class number for consistent ordering
-                character_options.sort(key=lambda x: x[1])
+                character_options = sorted(character_options, key=lambda x: character_map[x][1])
 
                 st.markdown("### 🎯 **Select a Kurdish Character**")
+                
+                # Dropdown selection
+                selected_option = st.selectbox(
+                    "Choose a Kurdish character to analyze:",
+                    options=["-- Select a character --"] + character_options,
+                    help="Select a Kurdish character from the dropdown to see a sample image",
+                )
 
-                # Create columns for a nice grid layout
-                cols = st.columns(7)  # 7 characters per row
-
-                selected_char = None
-                selected_path = None
-
-                # Display characters in a grid with buttons
-                for i, (char, class_name, file_path) in enumerate(character_options):
-                    col_idx = i % 7
-                    with cols[col_idx]:
-                        if st.button(
-                            char,
-                            key=f"char_{class_name}",
-                            help=f"Class {class_name}: {char}",
-                            use_container_width=True,
-                        ):
-                            selected_char = char
-                            selected_path = file_path
-
-                if selected_path:
+                if selected_option != "-- Select a character --":
+                    selected_char, class_name, selected_path = character_map[selected_option]
+                    
                     try:
                         image = Image.open(selected_path)
                         image_source = f"📝 Sample Image: **{selected_char}**"
@@ -295,7 +288,7 @@ def main():
         to recognize handwritten Kurdish characters.
         
         ### 📋 Instructions:
-        1. **Try sample images** by clicking on Kurdish letters
+        1. **Try sample images** by selecting from the dropdown
         2. **Upload your own** handwritten Kurdish character image
         3. Click "Analyze Character" to get AI predictions
         4. View detailed results and confidence scores
