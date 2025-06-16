@@ -27,14 +27,10 @@ KURDISH_CHAR_MAP = {
 }
 
 
-# Function to get display name (you can customize this)
+# Function to get display name
 def get_display_name(class_name):
     """Convert class name to display name. Customize this if you know the character mappings."""
-    # If you have KURDISH_CHAR_MAP defined above, uncomment this:
-    # return KURDISH_CHAR_MAP.get(class_name, f"Class {class_name}")
-
-    # For now, just return the class number
-    return f"Class {class_name}"
+    return KURDISH_CHAR_MAP.get(class_name, f"Class {class_name}")
 
 
 @st.cache_resource
@@ -50,7 +46,7 @@ def load_model():
 
 
 def preprocess_image(image):
-    """Preprocess uploaded image for prediction."""
+    """Preprocess uploaded image for prediction - EXACTLY matching training preprocessing."""
     try:
         # Convert PIL image to numpy array
         if isinstance(image, Image.Image):
@@ -58,20 +54,23 @@ def preprocess_image(image):
         else:
             img = image
 
-        # Convert to grayscale if needed
+        # Convert to grayscale if needed (training uses cv2.IMREAD_GRAYSCALE)
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-        # Resize to model input size
+        # 1. Resize to IMAGE_SIZE x IMAGE_SIZE
         img = cv2.resize(img, (IMAGE_SIZE, IMAGE_SIZE))
 
-        # Apply histogram equalization
+        # 2. Apply histogram equalization
         img = cv2.equalizeHist(img)
 
-        # Normalize
+        # 3. Convert to float32 and normalize to [0,1]
         img = img.astype(np.float32) / 255.0
 
-        # Reshape for model input (1, 1, 32, 32)
+        # 4. Reshape to match training format: (1, IMAGE_SIZE, IMAGE_SIZE)
+        img = img.reshape(1, IMAGE_SIZE, IMAGE_SIZE)
+
+        # 5. Add batch dimension for model input: (1, 1, IMAGE_SIZE, IMAGE_SIZE)
         img = img.reshape(1, 1, IMAGE_SIZE, IMAGE_SIZE)
 
         return img
