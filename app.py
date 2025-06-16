@@ -278,15 +278,11 @@ def main():
                                 # Confidence interpretation
                                 st.subheader("📊 Confidence Guide")
                                 if confidence > 0.8:
-                                    st.success(
-                                        "🎯 Very High Confidence"
-                                    )
+                                    st.success("🎯 Very High Confidence")
                                 elif confidence > 0.6:
                                     st.info("✅ Good Confidence")
                                 elif confidence > 0.4:
-                                    st.warning(
-                                        "⚠️ Moderate Confidence"
-                                    )
+                                    st.warning("⚠️ Moderate Confidence")
                                 else:
                                     st.error("❌ Low Confidence")
 
