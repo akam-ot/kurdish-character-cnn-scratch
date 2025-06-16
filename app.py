@@ -85,31 +85,39 @@ def main():
     )
 
     st.title("🔤 Kurdish Character Recognition")
+    st.markdown("*AI-powered handwritten Kurdish character recognition*")
     
     # Load model
     model = load_model()
     if model is None:
-        st.error("Failed to load model.")
+        st.error("Failed to load the model.")
         return
 
     # Main interface
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.subheader("Input")
+        st.header("📤 Input")
         
         # Choose input method
-        method = st.radio("", ["Sample Images", "Upload Image"], horizontal=True)
+        method = st.radio(
+            "Choose your input method:",
+            ["🎯 Try Sample Images", "📁 Upload Your Own"], 
+            horizontal=True
+        )
 
         image = None
+        image_source = ""
 
-        if method == "Upload Image":
+        if method == "📁 Upload Your Own":
             uploaded_file = st.file_uploader(
-                "Choose an image", 
-                type=["png", "jpg", "jpeg"]
+                "Choose an image file",
+                type=["png", "jpg", "jpeg", "bmp"],
+                help="Upload a clear image of handwritten Kurdish character"
             )
             if uploaded_file:
                 image = Image.open(uploaded_file)
+                image_source = "Your uploaded image"
 
         else:  # Sample Images
             available_samples = get_available_samples()
@@ -120,51 +128,90 @@ def main():
                 
                 for class_name, _, file_path in available_samples:
                     char = KURDISH_CHAR_MAP.get(class_name, class_name)
-                    display = f"{char}"
+                    display = f"{char} (Class {class_name})"
                     options.append(display)
                     char_map[display] = (char, class_name, file_path)
 
                 options = sorted(options, key=lambda x: char_map[x][1])
                 
-                selected = st.selectbox("Select character", [""] + options)
+                selected = st.selectbox(
+                    "Select a Kurdish character:",
+                    ["-- Choose a character --"] + options
+                )
                 
-                if selected:
-                    _, _, file_path = char_map[selected]
+                if selected != "-- Choose a character --":
+                    char, class_name, file_path = char_map[selected]
                     image = Image.open(file_path)
+                    image_source = f"Sample: {char}"
+            else:
+                st.warning("No sample images found.")
 
-        # Display image
+        # Display selected image
         if image:
-            st.image(image, width=300)
+            st.image(image, caption=image_source, width=300)
             
-            if st.button("Analyze", type="primary"):
-                processed_img = preprocess_image(image)
-                
-                if processed_img is not None:
-                    predicted_class, confidence, all_probs = predict_character(model, processed_img)
+            # Analysis button
+            if st.button("🔍 Analyze Character", type="primary", use_container_width=True):
+                with st.spinner("Analyzing..."):
+                    processed_img = preprocess_image(image)
                     
-                    if predicted_class is not None:
-                        with col2:
-                            st.subheader("Results")
-                            
-                            # Main prediction
-                            predicted_char = get_display_name(CLASS_NAMES[predicted_class])
-                            st.markdown(f"## {predicted_char}")
-                            st.markdown(f"**{confidence:.1%} confidence**")
-                            
-                            # Top predictions
-                            st.markdown("**Top predictions:**")
-                            top_indices = np.argsort(all_probs)[-3:][::-1]
-                            
-                            for idx in top_indices:
-                                char = get_display_name(CLASS_NAMES[idx])
-                                prob = all_probs[idx]
-                                st.write(f"{char} - {prob:.1%}")
+                    if processed_img is not None:
+                        predicted_class, confidence, all_probs = predict_character(model, processed_img)
+                        
+                        if predicted_class is not None:
+                            with col2:
+                                st.header("🎯 Results")
+                                
+                                # Main prediction
+                                predicted_char = get_display_name(CLASS_NAMES[predicted_class])
+                                
+                                st.markdown(f"### Predicted: **{predicted_char}**")
+                                
+                                # Confidence with color coding
+                                if confidence > 0.8:
+                                    st.success(f"🎯 {confidence:.1%} confidence (Very High)")
+                                elif confidence > 0.6:
+                                    st.info(f"✅ {confidence:.1%} confidence (Good)")
+                                elif confidence > 0.4:
+                                    st.warning(f"⚠️ {confidence:.1%} confidence (Moderate)")
+                                else:
+                                    st.error(f"❌ {confidence:.1%} confidence (Low)")
+                                
+                                # Show preprocessed image
+                                with st.expander("🔍 See processed image"):
+                                    processed_display = (processed_img[0, 0] * 255).astype(np.uint8)
+                                    st.image(processed_display, caption="How AI sees it", width=150)
+                                
+                                # Top 5 predictions
+                                st.markdown("**Top 5 predictions:**")
+                                top_indices = np.argsort(all_probs)[-5:][::-1]
+                                
+                                for i, idx in enumerate(top_indices):
+                                    char = get_display_name(CLASS_NAMES[idx])
+                                    prob = all_probs[idx]
+                                    st.write(f"{i+1}. **{char}** — {prob:.1%}")
 
-    # Minimal sidebar
+    # Balanced sidebar
     with st.sidebar:
-        st.markdown("**About**")
-        st.write("CNN model for Kurdish handwritten character recognition")
-        st.write("35 character classes supported")
+        st.header("ℹ️ About")
+        st.markdown("""
+        **Custom CNN Model**  
+        Built from scratch for Kurdish character recognition
+        
+        **35 Character Classes**  
+        Supports handwritten Kurdish letters
+        
+        **Instructions:**
+        1. Choose sample or upload image
+        2. Click analyze for AI prediction
+        3. View results and confidence
+        """)
+        
+        with st.expander("📋 Supported Characters"):
+            # Display characters in rows
+            chars = [get_display_name(name) for name in CLASS_NAMES]
+            for i in range(0, len(chars), 7):
+                st.write("  ".join(chars[i:i+7]))
 
 
 if __name__ == "__main__":
