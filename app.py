@@ -17,20 +17,21 @@ IMAGE_SIZE = 32
 CLASS_NAMES = [f"{i:02d}" for i in range(1, 36)]
 
 KURDISH_CHAR_MAP = {
-"01": "ا", "02": "ب", "03": "پ", "04": "ت", "05": "ئ",
-"06": "چ", "07": "ح", "08": "خ", "09": "د", "10": "ج",
-"11": "ڕ", "12": "ز", "13": "ژ", "14": "س", "15": "ر",
-"16": "ع", "17": "غ", "18": "ف", "19": "ڤ", "20": "ش",
-"21": "ک", "22": "ک", "23": "گ", "24": "ل", "25": "ق",
-"26": "م", "27": "ن", "28": "ه", "29": "ە", "30": "ڵ",
-"31": "ۆ", "32": "وو", "33": "ی", "34": "ێ", "35": "و"
+"01": "ئ", "02": "ا", "03": "ب", "04": "پ", "05": "ت",
+"06": "ج", "07": "چ", "08": "ح", "09": "خ", "10": "د",
+"11": "ر", "12": "ڕ", "13": "ز", "14": "ژ", "15": "س",
+"16": "ش", "17": "ع", "18": "غ", "19": "ف", "20": "ڤ",
+"21": "ق", "22": "ک", "23": "گ", "24": "ل", "25": "ڵ",
+"26": "م", "27": "ن", "28": "و", "29": "ۆ", "30": "ه",
+"31": "هـ", "32": "ی", "33": "ێ", "34": "ە", "35": "ى"
 }
 
 
-# Function to get display name
 def get_display_name(class_name):
     """Convert class name to display name. Customize this if you know the character mappings."""
     return KURDISH_CHAR_MAP.get(class_name, f"Class {class_name}")
+
+
 
 
 @st.cache_resource
@@ -127,7 +128,7 @@ def main():
         if uploaded_file is not None:
             # Display uploaded image
             image = Image.open(uploaded_file)
-            st.image(image, caption="Uploaded Image", use_column_width=True)
+            st.image(image, caption="Uploaded Image", use_container_width=True)
 
             # Preprocess button
             if st.button("🔍 Analyze Character", type="primary"):
@@ -153,7 +154,9 @@ def main():
 
                                 # Show preprocessed image
                                 st.subheader("Preprocessed Image")
-                                processed_display = processed_img[0, 0] * 255
+                                processed_display = (processed_img[0, 0] * 255).astype(
+                                    np.uint8
+                                )
                                 st.image(
                                     processed_display,
                                     caption="Processed for AI",
