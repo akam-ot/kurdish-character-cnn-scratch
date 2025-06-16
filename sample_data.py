@@ -5,6 +5,7 @@ from typing import List, Tuple, Optional
 # Sample data configuration
 SAMPLES_DIR = "sample_images"
 
+# Sample data
 SAMPLE_DATA = {
     "01": ["01_sample.jpg"],
     "02": ["02_sample.jpg"],
@@ -54,7 +55,7 @@ def get_available_samples() -> List[Tuple[str, str, str]]:
         for file_name in files:
             file_path = os.path.join(SAMPLES_DIR, file_name)
             if os.path.exists(file_path):
-                display_name = f"Class {class_name} - Sample {file_name.split('_')[-1].split('.')[0]}"
+                display_name = f"Class {class_name}"
                 samples.append((class_name, display_name, file_path))
     return samples
 
