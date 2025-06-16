@@ -14,9 +14,9 @@ from sample_data import get_available_samples, get_random_sample, get_sample_inf
 MODEL_PATH = "kurdish_cnn_model.pkl"
 IMAGE_SIZE = 32
 
-# Class names exactly as they appear in the dataset (01, 02, ..., 35)
 CLASS_NAMES = [f"{i:02d}" for i in range(1, 36)]
 
+# Kurdish character mapping from class numbers to actual characters
 KURDISH_CHAR_MAP = {
     "01": "ئ",
     "02": "ا",
@@ -56,10 +56,10 @@ KURDISH_CHAR_MAP = {
 }
 
 
+# Function to get display name with actual Kurdish characters
 def get_display_name(class_name):
-    """Convert class name to display name. Customize this if you know the character mappings."""
+    """Convert class name to display name using actual Kurdish characters."""
     return KURDISH_CHAR_MAP.get(class_name, f"Class {class_name}")
-
 
 
 @st.cache_resource
@@ -83,6 +83,7 @@ def preprocess_image(image):
         else:
             img = image
 
+        # Convert to grayscale if needed
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
@@ -143,19 +144,20 @@ def main():
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.header("📤 Upload or Select Image")
+        st.header("🎯 Choose Kurdish Character")
 
-        # Option to choose between upload or sample
+        # Option to choose between sample or upload
         input_method = st.radio(
             "Choose input method:",
-            ["📤 Upload Image", "🎲 Use Sample Data"],
+            ["🎯 Try Sample Characters", "📤 Upload Your Own"],
             horizontal=True,
+            help="Try our sample Kurdish characters or upload your own handwritten image",
         )
 
         image = None
         image_source = ""
 
-        if input_method == "📤 Upload Image":
+        if input_method == "📤 Upload Your Own":
             # File uploader
             uploaded_file = st.file_uploader(
                 "Choose an image file",
@@ -167,54 +169,70 @@ def main():
                 image = Image.open(uploaded_file)
                 image_source = "Uploaded Image"
 
-        else:  # Use Sample Data
-            st.write("### 🎲 Sample Images from Database")
-
+        else:  # Use Sample Characters
             # Get available samples
             available_samples = get_available_samples()
 
             if available_samples:
-                col_a, col_b = st.columns([3, 1])
+                # Create character options showing actual Kurdish letters
+                character_options = []
+                for class_name, display_name, file_path in available_samples:
+                    kurdish_char = KURDISH_CHAR_MAP.get(class_name, class_name)
+                    character_options.append((kurdish_char, class_name, file_path))
 
-                with col_a:
-                    # Sample selection dropdown - cleaner with just class names
-                    sample_options = [
-                        display_name for _, display_name, _ in available_samples
-                    ]
-                    selected_sample = st.selectbox(
-                        "Choose a character class:",
-                        options=sample_options,
-                        help="Select from real handwritten Kurdish characters (one per class)",
-                    )
+                # Sort by class number for consistent ordering
+                character_options.sort(key=lambda x: x[1])
 
-                with col_b:
-                    # Random sample button
-                    if st.button("🎲 Random", help="Get a random character"):
-                        random_sample = get_random_sample()
-                        if random_sample:
-                            selected_sample = random_sample[0]
-                            st.rerun()  # Refresh to show the random selection
+                st.markdown("### 🎯 **Select a Kurdish Character**")
 
-                # Find the selected sample path
+                cols = st.columns(7)
+
+                selected_char = None
                 selected_path = None
-                for _, display_name, file_path in available_samples:
-                    if display_name == selected_sample:
-                        selected_path = file_path
-                        break
 
-                if selected_path:
+                # Display characters in a grid with buttons
+                for i, (char, class_name, file_path) in enumerate(character_options):
+                    col_idx = i % 7
+                    with cols[col_idx]:
+                        if st.button(
+                            char,
+                            key=f"char_{class_name}",
+                            help=f"Class {class_name}: {char}",
+                            use_container_width=True,
+                        ):
+                            selected_char = char
+                            selected_path = file_path
+
+                # Alternative dropdown for easier selection
+                st.markdown("---")
+                st.markdown("**Or select from dropdown:**")
+                char_names = [char for char, _, _ in character_options]
+                selected_dropdown = st.selectbox(
+                    "Choose character:",
+                    options=char_names,
+                    format_func=lambda x: f"{x}",
+                    help="Select a Kurdish character to analyze",
+                )
+
+                # Use dropdown selection if no button was pressed
+                if not selected_char and selected_dropdown:
+                    for char, class_name, file_path in character_options:
+                        if char == selected_dropdown:
+                            selected_char = char
+                            selected_path = file_path
+                            break
+
+                                if selected_path:
                     try:
                         image = Image.open(selected_path)
-                        image_source = f"Sample: {selected_sample}"
-
-                        # Show the true class for educational purposes
+                        image_source = f"📝 Kurdish Character: **{selected_char}**"
+                        
+                        # Show selected character info
                         true_class = get_sample_info(selected_path)
                         if true_class:
-                            st.info(
-                                f"📚 **True Class**: {get_display_name(true_class)} (for reference)"
-                            )
+                            st.success(f"✨ **Selected Character**: {selected_char} (Class {true_class})")
                     except Exception as e:
-                        st.error(f"Error loading sample: {str(e)}")
+                        st.error(f"❌ Error loading character: {str(e)}")
             else:
                 st.warning(
                     "📂 No sample images found. Please upload your own image or add sample images to the repository."
@@ -227,7 +245,7 @@ def main():
         if image is not None:
             st.image(image, caption=image_source, use_container_width=True)
 
-        # Preprocess button 
+        # Preprocess button
         if image is not None:
             if st.button("🔍 Analyze Character", type="primary"):
                 with st.spinner("Processing image..."):
@@ -297,9 +315,10 @@ def main():
         to recognize handwritten Kurdish characters.
         
         ### 📋 Instructions:
-        1. Upload a clear image of a handwritten Kurdish character
-        2. Click "Analyze Character" to get predictions
-        3. View the results and confidence scores
+        1. **Try sample characters** by clicking on Kurdish letters or selecting from dropdown
+        2. **Upload your own** handwritten Kurdish character image
+        3. Click "Analyze Character" to get AI predictions
+        4. View detailed results and confidence scores
         
         ### 🎯 Model Info:
         - **Architecture**: Custom CNN from scratch
@@ -307,12 +326,6 @@ def main():
         - **Framework**: Pure NumPy implementation
         - **Training**: Kurdish Handwritten Character Database
         
-        ### 💡 Tips for Best Results:
-        - Use clear, well-lit images
-        - Ensure the character fills most of the image
-        - Avoid blurry or distorted images
-        - Black ink on white/light background works best
-        """
         )
 
         st.header("🔤 Supported Characters")
