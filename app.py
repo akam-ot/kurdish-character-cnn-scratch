@@ -149,9 +149,9 @@ def main():
         # Option to choose between sample or upload
         input_method = st.radio(
             "Choose input method:",
-            ["🎯 Try Sample Characters", "📤 Upload Your Own"],
+            ["🎯 Try Sample Images", "📤 Upload Your Own"],
             horizontal=True,
-            help="Try our sample Kurdish characters or upload your own handwritten image",
+            help="Try our sample Kurdish character images or upload your own handwritten image",
         )
 
         image = None
@@ -169,7 +169,7 @@ def main():
                 image = Image.open(uploaded_file)
                 image_source = "Uploaded Image"
 
-        else:  # Use Sample Characters
+        else:  # Use Sample Images
             # Get available samples
             available_samples = get_available_samples()
 
@@ -204,38 +204,19 @@ def main():
                             selected_char = char
                             selected_path = file_path
 
-                # Alternative dropdown for easier selection
-                st.markdown("---")
-                st.markdown("**Or select from dropdown:**")
-                char_names = [char for char, _, _ in character_options]
-                selected_dropdown = st.selectbox(
-                    "Choose character:",
-                    options=char_names,
-                    format_func=lambda x: f"{x}",
-                    help="Select a Kurdish character to analyze",
-                )
-
-                # Use dropdown selection if no button was pressed
-                if not selected_char and selected_dropdown:
-                    for char, class_name, file_path in character_options:
-                        if char == selected_dropdown:
-                            selected_char = char
-                            selected_path = file_path
-                            break
-
                 if selected_path:
                     try:
                         image = Image.open(selected_path)
-                        image_source = f"📝 Kurdish Character: **{selected_char}**"
+                        image_source = f"📝 Sample Image: **{selected_char}**"
 
                         # Show selected character info
                         true_class = get_sample_info(selected_path)
                         if true_class:
                             st.success(
-                                f"✨ **Selected Character**: {selected_char} (Class {true_class})"
+                                f"✨ **Selected Sample**: {selected_char} (Class {true_class})"
                             )
                     except Exception as e:
-                        st.error(f"❌ Error loading character: {str(e)}")
+                        st.error(f"❌ Error loading sample image: {str(e)}")
             else:
                 st.warning(
                     "📂 No sample images found. Please upload your own image or add sample images to the repository."
@@ -298,16 +279,16 @@ def main():
                                 st.subheader("📊 Confidence Guide")
                                 if confidence > 0.8:
                                     st.success(
-                                        "🎯 Very High Confidence - Excellent prediction!"
+                                        "🎯 Very High Confidence"
                                     )
                                 elif confidence > 0.6:
-                                    st.info("✅ Good Confidence - Reliable prediction")
+                                    st.info("✅ Good Confidence")
                                 elif confidence > 0.4:
                                     st.warning(
-                                        "⚠️ Moderate Confidence - Consider image quality"
+                                        "⚠️ Moderate Confidence"
                                     )
                                 else:
-                                    st.error("❌ Low Confidence - Try a clearer image")
+                                    st.error("❌ Low Confidence")
 
     # Sidebar with information
     with st.sidebar:
@@ -318,7 +299,7 @@ def main():
         to recognize handwritten Kurdish characters.
         
         ### 📋 Instructions:
-        1. **Try sample characters** by clicking on Kurdish letters or selecting from dropdown
+        1. **Try sample images** by clicking on Kurdish letters
         2. **Upload your own** handwritten Kurdish character image
         3. Click "Analyze Character" to get AI predictions
         4. View detailed results and confidence scores
