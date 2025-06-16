@@ -83,7 +83,7 @@ def preprocess_image(image):
         else:
             img = image
 
-        # Convert to grayscale if needed
+        # Convert to grayscale if needed (training uses cv2.IMREAD_GRAYSCALE)
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
@@ -185,7 +185,8 @@ def main():
 
                 st.markdown("### 🎯 **Select a Kurdish Character**")
 
-                cols = st.columns(7)
+                # Create columns for a nice grid layout
+                cols = st.columns(7)  # 7 characters per row
 
                 selected_char = None
                 selected_path = None
@@ -222,15 +223,17 @@ def main():
                             selected_path = file_path
                             break
 
-                                if selected_path:
+                if selected_path:
                     try:
                         image = Image.open(selected_path)
                         image_source = f"📝 Kurdish Character: **{selected_char}**"
-                        
+
                         # Show selected character info
                         true_class = get_sample_info(selected_path)
                         if true_class:
-                            st.success(f"✨ **Selected Character**: {selected_char} (Class {true_class})")
+                            st.success(
+                                f"✨ **Selected Character**: {selected_char} (Class {true_class})"
+                            )
                     except Exception as e:
                         st.error(f"❌ Error loading character: {str(e)}")
             else:
@@ -245,7 +248,7 @@ def main():
         if image is not None:
             st.image(image, caption=image_source, use_container_width=True)
 
-        # Preprocess button
+        # Preprocess button (only show if we have an image)
         if image is not None:
             if st.button("🔍 Analyze Character", type="primary"):
                 with st.spinner("Processing image..."):
@@ -325,7 +328,7 @@ def main():
         - **Classes**: 35 Kurdish characters
         - **Framework**: Pure NumPy implementation
         - **Training**: Kurdish Handwritten Character Database
-        
+        """
         )
 
         st.header("🔤 Supported Characters")
