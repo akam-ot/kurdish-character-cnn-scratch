@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 # Import model classes
 from model_classes import CNNModel
+from sample_data import get_available_samples, get_random_sample, get_sample_info
 
 # Configuration
 MODEL_PATH = "kurdish_cnn_model.pkl"
@@ -33,7 +34,6 @@ def get_display_name(class_name):
 
 
 
-
 @st.cache_resource
 def load_model():
     """Load the trained CNN model."""
@@ -55,7 +55,6 @@ def preprocess_image(image):
         else:
             img = image
 
-        # Convert to grayscale if needed (training uses cv2.IMREAD_GRAYSCALE)
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
@@ -116,21 +115,92 @@ def main():
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.header("📤 Upload Image")
+        st.header("📤 Upload or Select Image")
 
-        # File uploader
-        uploaded_file = st.file_uploader(
-            "Choose an image file",
-            type=["png", "jpg", "jpeg", "bmp", "tiff"],
-            help="Upload a clear image of a handwritten Kurdish character",
+        # Option to choose between upload or sample
+        input_method = st.radio(
+            "Choose input method:",
+            ["📤 Upload Image", "🎲 Use Sample Data"],
+            horizontal=True,
         )
 
-        if uploaded_file is not None:
-            # Display uploaded image
-            image = Image.open(uploaded_file)
-            st.image(image, caption="Uploaded Image", use_container_width=True)
+        image = None
+        image_source = ""
 
-            # Preprocess button
+        if input_method == "📤 Upload Image":
+            # File uploader
+            uploaded_file = st.file_uploader(
+                "Choose an image file",
+                type=["png", "jpg", "jpeg", "bmp", "tiff"],
+                help="Upload a clear image of a handwritten Kurdish character",
+            )
+
+            if uploaded_file is not None:
+                image = Image.open(uploaded_file)
+                image_source = "Uploaded Image"
+
+        else:  # Use Sample Data
+            st.write("### 🎲 Sample Images from Database")
+
+            # Get available samples
+            available_samples = get_available_samples()
+
+            if available_samples:
+                col_a, col_b = st.columns([3, 1])
+
+                with col_a:
+                    # Sample selection dropdown - cleaner with just class names
+                    sample_options = [
+                        display_name for _, display_name, _ in available_samples
+                    ]
+                    selected_sample = st.selectbox(
+                        "Choose a character class:",
+                        options=sample_options,
+                        help="Select from real handwritten Kurdish characters (one per class)",
+                    )
+
+                with col_b:
+                    # Random sample button
+                    if st.button("🎲 Random", help="Get a random character"):
+                        random_sample = get_random_sample()
+                        if random_sample:
+                            selected_sample = random_sample[0]
+                            st.rerun()  # Refresh to show the random selection
+
+                # Find the selected sample path
+                selected_path = None
+                for _, display_name, file_path in available_samples:
+                    if display_name == selected_sample:
+                        selected_path = file_path
+                        break
+
+                if selected_path:
+                    try:
+                        image = Image.open(selected_path)
+                        image_source = f"Sample: {selected_sample}"
+
+                        # Show the true class for educational purposes
+                        true_class = get_sample_info(selected_path)
+                        if true_class:
+                            st.info(
+                                f"📚 **True Class**: {get_display_name(true_class)} (for reference)"
+                            )
+                    except Exception as e:
+                        st.error(f"Error loading sample: {str(e)}")
+            else:
+                st.warning(
+                    "📂 No sample images found. Please upload your own image or add sample images to the repository."
+                )
+                st.info(
+                    "💡 **For developers**: Add sample images to the `sample_images/` folder in your repository."
+                )
+
+        # Display the selected image
+        if image is not None:
+            st.image(image, caption=image_source, use_container_width=True)
+
+        # Preprocess button 
+        if image is not None:
             if st.button("🔍 Analyze Character", type="primary"):
                 with st.spinner("Processing image..."):
                     # Preprocess image
